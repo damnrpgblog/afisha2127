@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Афиша Челябинск: 21 – 27 ноября</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --accent-color: #e74c3c;
+            --bg-color: #ffffff;
+            --card-bg: #f8f9fa;
+            --text-main: #333;
+            --text-muted: #666;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 10px;
+            background-color: transparent;
+            color: var(--text-main);
+        }
+
+        #widgetRoot {
+            max-width: 800px;
+            margin: 0 auto;
+            background: var(--bg-color);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .tabs-nav {
+            display: flex;
+            overflow-x: auto;
+            background: #eee;
+            gap: 2px;
+            scrollbar-width: none;
+        }
+        .tabs-nav::-webkit-scrollbar { display: none; }
+
+        .tab-btn {
+            flex: 1;
+            min-width: 80px;
+            padding: 12px 5px;
+            border: none;
+            background: #eee;
+            cursor: pointer;
+            text-align: center;
+            transition: 0.3s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .tab-btn.active {
+            background: var(--bg-color);
+            border-bottom: 3px solid var(--accent-color);
+        }
+
+        .tab-btn .date-num { font-weight: bold; font-size: 1.1em; }
+        .tab-btn .day-name { font-size: 0.8em; color: var(--text-muted); text-transform: uppercase; }
+
+        .events-container {
+            padding: 15px;
+            display: flex;
+            flex-direction: column; 
+            gap: 15px;
+            min-height: 550px;
+        }
+
+        .event-card {
+            display: flex;
+            flex-direction: column;
+            background: var(--card-bg);
+            border-radius: 8px;
+            padding: 15px;
+            cursor: pointer;
+            border-left: 4px solid var(--primary-color);
+            transition: transform 0.2s, box-shadow 0.2s;
+            flex-shrink: 0;
+        }
+
+        .event-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .event-header {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85em;
+            margin-bottom: 8px;
+        }
+
+        .category { color: var(--accent-color); font-weight: bold; text-transform: uppercase; }
+        .age-badge { background: #ddd; padding: 2px 6px; border-radius: 4px; font-weight: bold; }
+
+        .event-title {
+            font-size: 1.2em;
+            font-weight: bold;
+            margin-bottom: 8px;
+            line-height: 1.3;
+        }
+
+        .event-info-line {
+            font-size: 0.9em;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.85);
+            display: none;
+            z-index: 1000;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .detail-card {
+            background: #fff;
+            max-width: 600px;
+            margin: 10px auto;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        .detail-desc { line-height: 1.6; margin: 20px 0; color: #444; white-space: pre-wrap; font-size: 1.05em; }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            background: #f0f2f5;
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 0.95em;
+        }
+
+        .info-box strong { display: block; color: var(--text-muted); margin-bottom: 4px; text-transform: uppercase; font-size: 0.8em; }
+
+        .price-tag {
+            margin-top: 15px;
+            padding: 12px;
+            background: #fff3cd;
+            border-radius: 6px;
+            font-weight: bold;
+            text-align: center;
+            border: 1px solid #ffeeba;
+        }
+
+        .back-btn-container {
+            margin-top: 30px;
+            border-top: 1px solid #eee;
+            padding-top: 20px;
+        }
+
+        .back-btn {
+            display: block;
+            width: 100%;
+            padding: 16px;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.3s;
+            text-align: center;
+        }
+
+        .back-btn:hover { background: #34495e; }
+    </style>
+</head>
+<body>
+
+<div id="widgetRoot">
+    <div class="tabs-nav" id="tabsNav"></div>
+    <div class="events-container" id="eventsList"></div>
+</div>
+
+<div class="overlay" id="overlay">
+    <div class="detail-card" id="detailCard">
+        <div id="detailContent"></div>
+        <div class="back-btn-container">
+            <button class="back-btn" onclick="closeDetails()">← Назад на афишу</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const events = [
+        // Суббота 21.11
+        { date: '2026-11-21', time: '15:00', age: '0+', cat: 'Праздник', title: 'Открытие зимнего катка с Ольгой Фаткулиной', loc: 'Детский парк им. Терешковой (ул. Рождественского, 6)', price: 'Уточняйте у организаторов', desc: 'В Детском парке имени В. В. Терешковой (ул. Рождественского, 6) 21 ноября в 15:00 состоится праздничное открытие зимнего катка вместе с радио «Олимп». Специальным гостем праздника станет серебряный призер Олимпийских игр, чемпионка мира, рекордсменка России по конькобежному спорту и участница телешоу «Титаны» Ольга Фаткулина, которая первой выйдет на ледовую площадку. 0+' },
+        { date: '2026-11-21', time: '18:30', age: '16+', cat: 'Спектакль', title: 'Спектакль «Месяц в деревне»', loc: 'Молодежный театр (ул. Кирова, 116)', price: '600–1500 руб.', desc: 'На сцене Молодежного театра (ул. Кирова, 116) 21 ноября в 18:30 покажут спектакль «Месяц в деревне» (16+) по одноименной пьесе Ивана Тургенева в постановке Олега Молитвина. В центре классической психологической драмы — любовный четырехугольник в дворянском поместье. В роли Натальи Петровны — народная артистка России Ольга Телякова, студента Беляева играет Александр Дегтярев. Стоимость билетов — 600–1500 руб.' },
+        { date: '2026-11-21', time: '20:00', age: '16+', cat: 'Концерт', title: 'Шура (Александр Медведев)', loc: 'Ресторан «Максимилианс» (ул. Труда, 183)', price: '4000–15 000 руб.', desc: 'В ресторане «Максимилианс» (ул. Труда, 183) 21 ноября в 20:00 с сольным концертом выступит певец и автор песен Шура (Александр Медведев). В программе прозвучат главные хиты исполнителя: «Ты не верь слезам», «Твори добро», «Холодная луна» и «Отшумели летние дожди». Стоимость билетов — от 4000 до 15 000 руб. 16+' },
+        { date: '2026-11-21', time: '20:00', age: '18+', cat: 'Концерт', title: 'АК-47 и TGK («Триагрутрика»)', loc: 'КРК «Таганай» (ул. Труда, 181)', price: '3500–5000 руб.', desc: 'В КРК «Таганай» (ул. Труда, 181) 21 ноября в 20:00 пройдет большой совместный концерт уральских хип-хоп-коллективов АК-47 и TGK («Триагрутрика»). На сцену выйдут Витя АК, Максим АК, а также Jahmal TGK и VibeTGK, которые исполнят лучшие треки за историю групп. Стоимость билетов — от 3500 до 5000 руб. 18+' },
+        { date: '2026-11-21', time: '21:00', age: '6+', cat: 'Экскурсия', title: 'Вечерняя прогулка «История парка, рассказанная на ночь»', loc: 'Вход в парк Гагарина', price: '600 руб.', desc: 'Проект «Челябинск пешком» 21 ноября проведет вечернюю прогулку «История парка, рассказанная на ночь» с экскурсоводом Еленой Кубрак. Во время полуторачасового променада участники узнают предысторию появления городского парка в сосновом бору, познакомятся с его знаковыми сооружениями и спортивными объектами. Место сбора — у входа в парк Гагарина. Время проведения — с 21:00 до 22:30. Стоимость участия — 600 руб.' },
+
+        // Воскресенье 22.11
+        { date: '2026-11-22', time: '13:00', age: '0+', cat: 'Лекция', title: 'Лекция-прогулка «Животные в культурах народов мира»', loc: 'Челябинский зоопарк (ул. Труда, 191)', price: 'Лекция бесплатно, входной билет в зоопарк — до 500 руб.', desc: 'В Челябинском зоопарке (ул. Труда, 191) 22 ноября с 13:00 до 14:00 пройдет лекция-прогулка «Животные в культурах народов мира». Слушателям расскажут, как верблюды попали на герб Челябинска, почему снежные барсы стали символом Казани, какое животное считается самым хитрым и в фольклоре каких народов фигурируют выдра и росомаха. Место встречи — возле вольера с хищными птицами. Участие в лекции бесплатное, оплачивается только входной билет в зоопарк (до 500 руб.). 0+' },
+        { date: '2026-11-22', time: '19:00', age: '18+', cat: 'Стендап', title: 'Юмористический турнир Roast Battle', loc: 'Стендап-клуб (пр. Ленина, 66а, стр. 1)', price: '500–700 руб.', desc: 'В Стендап-клубе (пр. Ленина, 66а, стр. 1) 22 ноября в 19:00 состоится юмористический турнир Roast Battle («прожарка»). Комики сразятся в формате жестких взаимных шуток за главный денежный приз, который формировался на протяжении всего турнира. Стоимость билетов — 500–700 руб. 18+' },
+
+        // Понедельник 23.11
+        { date: '2026-11-23', time: '15:00', age: '12+', cat: 'Кино', title: 'Документальный фильм об Александре Асмолове', loc: 'Информационный центр по атомной энергии (ул. Энгельса, 107)', price: 'Вход свободный', desc: 'В Информационном центре по атомной энергии (ул. Энгельса, 107) 23 ноября с 15:00 до 16:00 пройдет специальный показ документального фильма-монолога в рамках цикла «Путешествие по линии жизни». Лента посвящена доктору психологических наук, академику РАО и научному руководителю Московского института психоанализа Александру Асмолову. Повествование выстроено через архивные семейные фотографии, превращающиеся в историческую видеохронику. Вход свободный, по предварительной регистрации. 12+' },
+        { date: '2026-11-23', time: '19:00', age: '16+', cat: 'Театр', title: 'Читка пьесы «Кто-то страшнее меня»', loc: 'Театр «Многогранник» (ул. Тимирязева, 12а)', price: 'Вход бесплатный', desc: 'В Театре «Многогранник» (ул. Тимирязева, 12а) 23 ноября в 19:00 (сбор гостей в 18:30) в рамках проекта «ВечерМечты» пройдет читка пьесы современного драматурга Игоря Витренко «Кто-то страшнее меня». Профессиональные артисты представят текст без комедийных интонаций, после чего зрители путем голосования и открытой дискуссии определят целесообразность включения материала в репертуар театра. Вход бесплатный, по предварительной регистрации (количество мест ограничено — до 30 человек). 16+' },
+
+        // Вторник 24.11
+        { date: '2026-11-24', time: '13:00', age: '12+', cat: 'Лекция', title: 'Лекция-презентация «Челябинск архитектурный»', loc: 'Областная научная библиотека (пр. Ленина, 60)', price: '480 руб. (Пушкинская карта)', desc: 'В Челябинской областной универсальной научной библиотеке (пр. Ленина, 60) 24 ноября с 13:00 до 14:00 в рамках проекта «Искусство вокруг нас» пройдет лекция-презентация «Челябинск архитектурный». Профессор ЮУрГУ и член Общественной палаты РФ Наталья Балынская расскажет о градостроительной эволюции города, трансформации купеческих окраин в креативные пространства, парках меценатов и специфике челябинских площадей. Стоимость билетов — 480 руб. (доступно по «Пушкинской карте»). 12+' },
+        { date: '2026-11-24', time: '18:00', age: '18+', cat: 'Кино', title: 'Фильм Дэвида Линча «Простая история»', loc: 'К/т «Знамя» (ул. Кирова, 112)', price: '400 руб.', desc: 'В кинотеатре «Знамя» (ул. Кирова, 112) 24 ноября в 18:00 в рамках проекта «Иное кино» покажут отреставрированную картину Дэвида Линча «Простая история» (18+). Сюжет драмы основан на реальных событиях: 73-летний старик Элвин Стрейт, не имеющий водительских прав, отправляется через несколько штатов к тяжело больному брату на старой газонокосилке, превращая свой путь в глубокое философское роуд-муви. Стоимость билетов — 400 руб.' },
+
+        // Среда 25.11
+        { date: '2026-11-25', time: '19:30', age: '6+', cat: 'Кино', title: 'Кинопоказ «Шрек»', loc: '«Кофе и Книги» (ул. Красная, 69)', price: 'За покупку напитка', desc: 'В кофейне «Кофе и Книги» (ул. Красная, 69) 25 ноября в 19:30 пройдет вечерний показ на проекторе культового анимационного фильма «Шрек» (6+) 2001 года. История зеленого великана-огра, вынужденного спасать принцессу Фиону из башни с огнедышащим драконом ради возвращения покоя на родном болоте. Вход — покупка любого напитка по предварительной регистрации.' },
+
+        // Четверг 26.11
+        { date: '2026-11-26', time: '19:00', age: '18+', cat: 'Шоу', title: 'Мужское танцевальное шоу «Аполлоны»', loc: 'Конгресс-холл (пр. Ленина, 35)', price: '2000–5000 руб.', desc: 'В Конгресс-холле (пр. Ленина, 35) 26 ноября в 19:00 представят мужское танцевальное шоу «Аполлоны». Театрализованная хореографическая программа включает зрелищные номера, интерактивы со зрителями и конкурсы. Стоимость билетов — 2000–5000 руб. 18+' },
+        { date: '2026-11-26', time: '19:00', age: '12+', cat: 'Концерт', title: 'Вечер «Музыка в темноте»', loc: 'К/т «Знамя» (ул. Кирова, 112)', price: '650 руб.', desc: 'В кинотеатре «Знамя» (ул. Кирова, 112) 26 ноября с 19:00 до 21:00 пройдет атмосферный вечер «Музыка в темноте». Слушателям предложат погрузиться в полумрак для более глубокого и обостренного восприятия живой инструментальной музыки. Стоимость билетов — 650 руб. 12+' },
+
+        // Пятница 27.11
+        { date: '2026-11-27', time: '18:00', age: '12+', cat: 'Лекция', title: 'Научно-музыкальное ток-шоу «Квадрат эволюции»', loc: 'Информационный центр по атомной энергии (ул. Энгельса, 107)', price: 'Вход свободный', desc: 'В Информационном центре по атомной энергии (ул. Энгельса, 107) 27 ноября с 18:00 до 19:00 состоится научно-музыкальное ток-шоу «Квадрат эволюции». Спикер Андрей Акатов представит исторический экскурс в развитие атомных технологий, а гитаристка Маргарита Касаткина проследит путь музыки от Баха до искусственного интеллекта и исполнит авторскую симфонию, в которой химические элементы звучат через оптические спектры. Вход свободный, по предварительной регистрации. 12+' },
+        { date: '2026-11-27', time: '18:30', age: '6+', cat: 'Концерт', title: 'Петр Лаул — «Фортепианные фантазии»', loc: 'КЗ им. Прокофьева (ул. Труда, 92а)', price: '800–1600 руб. (Пушкинская карта)', desc: 'В Концертном зале имени Прокофьева (ул. Труда, 92а) 27 ноября в 18:30 в рамках программы «Всероссийские филармонические сезоны» и цикла «Steinway-вечера» (по названию американской фирмы, выпускающей рояли) выступит пианист, лауреат международных конкурсов и преподаватель Санкт-Петербургской консерватории Петр Лаул с программой «Фортепианные фантазии». Музыкант исполнит и прокомментирует сочинения Моцарта (Фантазия ре минор), Бетховена (ор. 77), Шуберта («Скиталец»), а также фантазии Шопена и Шумана. Стоимость билетов — 800–1600 руб. (действует «Пушкинская карта»). 6+' },
+        { date: '2026-11-27', time: '19:00', age: '16+', cat: 'Спектакль', title: 'Спектакль «Кончилось лето»', loc: 'Театр «Многогранник» (ул. Тимирязева, 12а)', price: '1000 руб.', desc: 'Там же 27 ноября в 19:00 состоится показ спектакля «Кончилось лето» (16+) в жанре биографической рок-истории. Постановка автора, режиссера и исполнителя Романа Грачева посвящена мужчинам среднего возраста, их юношеским надеждам, творческим кризисам и воспоминаниям под живой гитарный рок-драйв в атмосфере гаражной романтики. Стоимость билетов — 1000 руб.' },
+        { date: '2026-11-27', time: '21:30', age: '12+', cat: 'Кино', title: 'Киноночь. Хаяо Миядзаки', loc: 'К/т «Знамя» (ул. Кирова, 112)', price: '750 руб.', desc: 'В кинотеатре «Знамя» (ул. Кирова, 112) 27 ноября с 21:30 до 23:30 состоится масштабная «Киноночь. Хаяо Миядзаки» (12+). На большом экране зрителям покажут три шедевра японской анимации: сказочную повесть «Мой сосед Тоторо», оскароносную картину «Унесенные призраками» и фэнтези «Ходячий замок». Стоимость билетов — 750 руб.' }
+    ];
+
+    const days = [
+        { date: '2026-11-21', label: 'Сб' },
+        { date: '2026-11-22', label: 'Вс' },
+        { date: '2026-11-23', label: 'Пн' },
+        { date: '2026-11-24', label: 'Вт' },
+        { date: '2026-11-25', label: 'Ср' },
+        { date: '2026-11-26', label: 'Чт' },
+        { date: '2026-11-27', label: 'Пт' }
+    ];
+
+    let currentDay = days[0].date;
+
+    function renderTabs() {
+        const nav = document.getElementById('tabsNav');
+        nav.innerHTML = days.map(d => {
+            const dateObj = new Date(d.date);
+            const dayNum = dateObj.getDate().toString().padStart(2, '0');
+            const monthNum = (dateObj.getMonth() + 1).toString().padStart(2, '0');
+            return `
+                <button class="tab-btn ${d.date === currentDay ? 'active' : ''}" onclick="setDay('${d.date}')">
+                    <span class="day-name">${d.label}</span>
+                    <span class="date-num">${dayNum}.${monthNum}</span>
+                </button>
+            `;
+        }).join('');
+    }
+
+    function renderEvents() {
+        const container = document.getElementById('eventsList');
+        const filtered = events.filter(e => e.date === currentDay);
+        filtered.sort((a, b) => a.time.localeCompare(b.time));
+
+        if (filtered.length === 0) {
+            container.innerHTML = '<div style="text-align:center; padding:60px; color:#999;">На этот день событий не найдено</div>';
+        } else {
+            container.innerHTML = filtered.map(e => `
+                <div class="event-card" onclick="showDetails('${e.date}', '${e.time}', '${e.title.replace(/'/g, "\\'")}')">
+                    <div class="event-header">
+                        <span class="category">${e.cat}</span>
+                        <span class="age-badge">${e.age}</span>
+                    </div>
+                    <div class="event-title">${e.title}</div>
+                    <div class="event-info-line">
+                        <span>🕒 ${e.time}</span>
+                        <span>📍 ${e.loc}</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+        sendHeight();
+    }
+
+    function setDay(date) {
+        currentDay = date;
+        renderTabs();
+        renderEvents();
+    }
+
+    function showDetails(date, time, title) {
+        const ev = events.find(e => e.date === date && e.time === time && e.title === title);
+        const content = document.getElementById('detailContent');
+        
+        content.innerHTML = `
+            <div class="category" style="margin-bottom:10px">${ev.cat} <span class="age-badge" style="float:right">${ev.age}</span></div>
+            <h2 style="margin-top:0; line-height:1.2;">${ev.title}</h2>
+            <div class="detail-desc">${ev.desc}</div>
+            <div class="info-grid">
+                <div class="info-box">
+                    <strong>Когда</strong>
+                    ${new Date(ev.date).toLocaleDateString('ru-RU', {day:'numeric', month:'long'})}, ${ev.time}
+                </div>
+                <div class="info-box">
+                    <strong>Где</strong>
+                    ${ev.loc}
+                </div>
+            </div>
+            <div class="price-tag">Стоимость: ${ev.price}</div>
+        `;
+        
+        document.getElementById('overlay').style.display = 'block';
+        document.body.style.overflow = 'hidden';
+        sendHeight(); 
+    }
+
+    function closeDetails() {
+        document.getElementById('overlay').style.display = 'none';
+        document.body.style.overflow = 'auto';
+        sendHeight();
+    }
+
+    function sendHeight() {
+        setTimeout(() => {
+            const height = document.getElementById('widgetRoot').offsetHeight;
+            window.parent.postMessage({ frameHeight: height }, '*');
+        }, 80);
+    }
+
+    renderTabs();
+    renderEvents();
+    window.addEventListener('resize', sendHeight);
+</script>
+
+</body>
+</html>
